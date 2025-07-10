@@ -5,7 +5,6 @@
   <title>Tiket Bola + QR Code</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body {
       background: linear-gradient(to bottom right, #3b82f6, #ffffff);
@@ -16,38 +15,43 @@
       border-radius: 1rem;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
     }
+
+    .seat {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      margin: 4px;
+      text-align: center;
+      line-height: 40px;
+      border-radius: 6px;
+      background-color: #e5e7eb;
+      cursor: pointer;
+    }
+
+    .seat.selected {
+      background-color: #3b82f6;
+      color: white;
+    }
   </style>
-
-  <script>
-    // Proteksi akses langsung
-    if (localStorage.getItem("isLoggedIn") !== "true") {
-      window.location.href = "login.html";
-    }
-
-    function logout() {
-      localStorage.removeItem("isLoggedIn");
-      localStorage.removeItem("currentUser");
-      window.location.href = "login.html";
-    }
-  </script>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-6">
-
   <div class="max-w-xl w-full p-8 overlay">
     <h1 class="text-3xl font-bold text-center text-blue-800 mb-6">🎫 Tiket Bola + QR Code</h1>
 
     <div class="mb-4">
       <label for="match" class="block text-gray-700 font-semibold">Pilih Pertandingan</label>
       <select id="match" class="mt-2 w-full px-4 py-2 border border-gray-300 rounded-md">
-        <option value="Liverpool vs Manchester United,75000">Liverpool vs Manchester United - Rp75.000</option>
-        <option value="Barcelona vs Real Madrid,80000">Barcelona vs Real Madrid - Rp80.000</option>
-        <option value="PSG vs Manchester City,70000">PSG vs Manchester City - Rp70.000</option>
+        <option value="Liverpool vs Manchester United">Liverpool vs Manchester United</option>
+        <option value="Barcelona vs Real Madrid">Barcelona vs Real Madrid</option>
+        <option value="PSG vs Manchester City">PSG vs Manchester City</option>
       </select>
     </div>
 
     <div class="mb-4">
-      <label for="qty" class="block text-gray-700 font-semibold">Jumlah Tiket</label>
-      <input type="number" id="qty" min="1" value="1" class="mt-2 w-full px-4 py-2 border border-gray-300 rounded-md">
+      <label class="block text-gray-700 font-semibold">Pilih Bangku (max 5)</label>
+      <div id="seats" class="grid grid-cols-5 gap-2 mt-2">
+        <!-- Bangku akan ditambahkan dengan JS -->
+      </div>
     </div>
 
     <button onclick="beliTiket()" class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition">
@@ -58,37 +62,72 @@
       <h2 class="text-lg font-semibold mb-2">✅ Ringkasan & QR Code</h2>
       <p id="ringkasan" class="mb-4"></p>
       <div id="qrcode" class="flex justify-center"></div>
-
-      <button onclick="cetakPDF()" class="mt-4 bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700">
-        Cetak Tiket (PDF)
-      </button>
     </div>
   </div>
 
   <footer class="mt-10 text-sm text-black text-center">
-    &copy; 2025 TiketBola | Desain oleh Rindra Athalla <br>
-    <button onclick="logout()" class="text-blue-600 underline">Logout</button>
+    &copy; 2025 TiketBola | Desain oleh Rindra Athalla
   </footer>
 
   <script>
-    function beliTiket() {
-      const matchValue = document.getElementById("match").value;
-      const qty = parseInt(document.getElementById("qty").value);
-      const [match, priceStr] = matchValue.split(",");
-      const price = parseInt(priceStr);
-      const total = price * qty;
+    const seatPrices = {};
+    const maxSelection = 5;
 
-      const ringkasanText = `
+    function createSeats() {
+      const container = document.getElementById("seats");
+      const rows = ["A", "B", "C"];
+
+      rows.forEach(row => {
+        for (let i = 1; i <= 10; i++) {
+          const seatId = `${row}${i}`;
+          const btn = document.createElement("div");
+          btn.className = "seat";
+          btn.textContent = seatId;
+
+          let price = 0;
+          if (row === "A") price = 100000;
+          else if (row === "B") price = 85000;
+          else if (row === "C") price = 70000;
+
+          seatPrices[seatId] = price;
+
+          btn.addEventListener("click", () => {
+            btn.classList.toggle("selected");
+            const selected = document.querySelectorAll(".seat.selected");
+            if (selected.length > maxSelection) {
+              btn.classList.remove("selected");
+              alert("Maksimal 5 bangku!");
+            }
+          });
+
+          container.appendChild(btn);
+        }
+      });
+    }
+
+    function beliTiket() {
+      const match = document.getElementById("match").value;
+      const selectedSeats = [...document.querySelectorAll(".seat.selected")].map(el => el.textContent);
+
+      if (selectedSeats.length === 0) {
+        alert("Pilih minimal 1 bangku.");
+        return;
+      }
+
+      let total = 0;
+      selectedSeats.forEach(seat => total += seatPrices[seat]);
+
+      const ringkasanHTML = `
         Pertandingan: <strong>${match}</strong><br>
-        Jumlah tiket: ${qty}<br>
-        Harga per tiket: Rp${price.toLocaleString()}<br>
+        Bangku: ${selectedSeats.join(", ")}<br>
+        Jumlah tiket: ${selectedSeats.length}<br>
         <strong>Total bayar: Rp${total.toLocaleString()}</strong>
       `;
 
-      document.getElementById("ringkasan").innerHTML = ringkasanText;
+      document.getElementById("ringkasan").innerHTML = ringkasanHTML;
       document.getElementById("output").classList.remove("hidden");
 
-      const qrData = `TIKET|${match}|${qty} tiket|Total: Rp${total.toLocaleString()}`;
+      const qrData = `TIKET|${match}|${selectedSeats.length} tiket|Bangku: ${selectedSeats.join(", ")}|Total: Rp${total.toLocaleString()}`;
       const qrDiv = document.getElementById("qrcode");
       qrDiv.innerHTML = "";
 
@@ -102,33 +141,8 @@
       });
     }
 
-    async function cetakPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-
-      const ringkasanHTML = document.getElementById("ringkasan").innerHTML;
-      const qrCanvas = document.querySelector("#qrcode canvas");
-      const qrImgData = qrCanvas.toDataURL("image/png");
-
-      const tempDiv = document.createElement("div");
-      tempDiv.innerHTML = ringkasanHTML;
-      const lines = tempDiv.innerText.split("\n");
-
-      let y = 20;
-      doc.setFontSize(14);
-      doc.text("TIKET PERTANDINGAN", 20, y);
-      y += 10;
-
-      lines.forEach(line => {
-        doc.setFontSize(12);
-        doc.text(line.trim(), 20, y);
-        y += 8;
-      });
-
-      doc.addImage(qrImgData, "PNG", 70, y + 5, 60, 60);
-
-      doc.save("tiket-bola.pdf");
-    }
+    // Inisialisasi
+    createSeats();
   </script>
 </body>
 </html>
