@@ -16,6 +16,7 @@
       cursor: pointer;
       background-color: #e5e7eb;
       transition: all 0.2s;
+      font-weight: bold;
     }
     .seat.selected {
       background-color: #3b82f6;
@@ -36,8 +37,8 @@
     <div class="mb-4">
       <label class="block font-semibold text-gray-700">Pilih Pertandingan:</label>
       <select id="match" class="mt-2 w-full px-4 py-2 border border-gray-300 rounded-md">
-        <option value="Liverpool vs Manchester United,1.2">Liverpool vs Manchester United </option>
-        <option value="Barcelona vs Real Madrid,1.0">Barcelona vs Real Madrid </option>
+        <option value="Liverpool vs Manchester United,1.2">Liverpool vs Manchester United</option>
+        <option value="Barcelona vs Real Madrid,1.0">Barcelona vs Real Madrid</option>
         <option value="PSG vs Manchester City,0.8">PSG vs Manchester City</option>
       </select>
     </div>
@@ -47,7 +48,7 @@
       💺 A1–A10 = <strong>ZONA VIP</strong><br>
       💺 B1–B10 = <strong>ZONA BARAT</strong><br>
       💺 C1–C10 = <strong>ZONA SELATAN</strong><br><br>
-      <strong>Keterangan Harga Pertandingan (faktor pengali):</strong><br>
+      <strong>Keterangan Harga Pertandingan</strong><br>
       ⚽ Liverpool vs Manchester United = <strong>Rp.360.000-120.000</strong><br>
       ⚽ Barcelona vs Real Madrid = <strong>Rp.300.000-100.000</strong><br>
       ⚽ PSG vs Manchester City = <strong>Rp.240.000-80.000</strong>
@@ -81,7 +82,7 @@
   </div>
 
   <!-- ✅ Watermark UI -->
-  <div class="mt-8 text-center text-sm text-gray-400">
+  <div class="mt-8 text-center text-sm text-black-400">
     © 2025 Desain oleh Rindra Athalla
   </div>
 
@@ -97,6 +98,8 @@
 
     function createSeats(rowLetter, containerId) {
       const row = document.getElementById(containerId);
+      if (!row) return;
+
       for (let i = 1; i <= 10; i++) {
         const seatId = rowLetter + i;
         const seat = document.createElement('div');
@@ -113,4 +116,89 @@
               alert('Maksimal 5 kursi boleh dipilih');
               return;
             }
-            seat.classList.
+            seat.classList.add('selected');
+            selectedSeats.add(seat.textContent);
+          }
+        };
+        row.appendChild(seat);
+      }
+    }
+
+    // Panggil setelah elemen row dibuat
+    window.onload = () => {
+      createSeats('C', 'rowC');
+      createSeats('B', 'rowB');
+      createSeats('A', 'rowA');
+    };
+
+    function submitSeats() {
+      const matchSelect = document.getElementById("match");
+      const [selectedMatch, multiplierStr] = matchSelect.value.split(",");
+      const multiplier = parseFloat(multiplierStr);
+
+      if (selectedSeats.size === 0) {
+        document.getElementById('ringkasan').textContent = 'Silakan pilih minimal satu kursi.';
+        return;
+      }
+
+      let total = 0;
+      const seats = Array.from(selectedSeats);
+      seats.forEach(seat => total += seatPrices[seat] * multiplier);
+
+      const summary = `Pertandingan: <strong>${selectedMatch}</strong><br>
+        Bangku: ${seats.join(", ")}<br>
+        Jumlah tiket: ${seats.length}<br>
+        <strong>Total bayar: Rp${Math.round(total).toLocaleString()}</strong>`;
+
+      document.getElementById('ringkasan').innerHTML = summary;
+      document.getElementById('output').classList.remove('hidden');
+
+      const qrData = `TIKET|${selectedMatch}|${seats.length} tiket|Bangku: ${seats.join(", ")}|Total: Rp${Math.round(total).toLocaleString()}`;
+      const qrDiv = document.getElementById("qrcode");
+      qrDiv.innerHTML = "";
+
+      new QRCode(qrDiv, {
+        text: qrData,
+        width: 200,
+        height: 200,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    }
+
+    async function cetakPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      const ringkasanHTML = document.getElementById("ringkasan").innerHTML;
+      const qrCanvas = document.querySelector("#qrcode canvas");
+      const qrImgData = qrCanvas.toDataURL("image/png");
+
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = ringkasanHTML;
+      const lines = tempDiv.innerText.trim().split("\n");
+
+      let y = 20;
+      doc.setFontSize(14);
+      doc.text("TIKET PERTANDINGAN", 20, y);
+      y += 10;
+
+      lines.forEach(line => {
+        doc.setFontSize(12);
+        doc.text(line.trim(), 20, y);
+        y += 8;
+      });
+
+      doc.addImage(qrImgData, "PNG", 70, y + 5, 60, 60);
+
+      // Tambahkan watermark PDF
+      doc.setFontSize(10);
+      doc.setTextColor(150);
+      doc.text("© 2025 Desain oleh Rindra Athalla", 105, 290, { align: "center" });
+
+      doc.save("tiket-bola.pdf");
+    }
+  </script>
+</body>
+</html>
