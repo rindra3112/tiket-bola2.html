@@ -80,6 +80,11 @@
     </div>
   </div>
 
+  <!-- ✅ Watermark UI -->
+  <div class="mt-8 text-center text-sm text-gray-400">
+    © 2025 Desain oleh Rindra Athalla
+  </div>
+
   <script>
     const maxSeats = 5;
     const basePrices = {
@@ -108,80 +113,4 @@
               alert('Maksimal 5 kursi boleh dipilih');
               return;
             }
-            seat.classList.add('selected');
-            selectedSeats.add(seat.textContent);
-          }
-        };
-        row.appendChild(seat);
-      }
-    }
-
-    createSeats('C', 'rowC');
-    createSeats('B', 'rowB');
-    createSeats('A', 'rowA');
-
-    function submitSeats() {
-      const matchSelect = document.getElementById("match");
-      const [selectedMatch, multiplierStr] = matchSelect.value.split(",");
-      const multiplier = parseFloat(multiplierStr);
-
-      if (selectedSeats.size === 0) {
-        document.getElementById('ringkasan').textContent = 'Silakan pilih minimal satu kursi.';
-        return;
-      }
-
-      let total = 0;
-      const seats = Array.from(selectedSeats);
-      seats.forEach(seat => total += seatPrices[seat] * multiplier);
-
-      const summary = `Pertandingan: <strong>${selectedMatch}</strong><br>
-        Bangku: ${seats.join(", ")}<br>
-        Jumlah tiket: ${seats.length}<br>
-        <strong>Total bayar: Rp${Math.round(total).toLocaleString()}</strong>`;
-
-      document.getElementById('ringkasan').innerHTML = summary;
-      document.getElementById('output').classList.remove('hidden');
-
-      const qrData = `TIKET|${selectedMatch}|${seats.length} tiket|Bangku: ${seats.join(", ")}|Total: Rp${Math.round(total).toLocaleString()}`;
-      const qrDiv = document.getElementById("qrcode");
-      qrDiv.innerHTML = "";
-
-      new QRCode(qrDiv, {
-        text: qrData,
-        width: 200,
-        height: 200,
-        colorDark: "#000000",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.H
-      });
-    }
-
-    async function cetakPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-
-      const ringkasanHTML = document.getElementById("ringkasan").innerHTML;
-      const qrCanvas = document.querySelector("#qrcode canvas");
-      const qrImgData = qrCanvas.toDataURL("image/png");
-
-      const tempDiv = document.createElement("div");
-      tempDiv.innerHTML = ringkasanHTML;
-      const lines = tempDiv.innerText.trim().split("\n");
-
-      let y = 20;
-      doc.setFontSize(14);
-      doc.text("TIKET PERTANDINGAN", 20, y);
-      y += 10;
-
-      lines.forEach(line => {
-        doc.setFontSize(12);
-        doc.text(line.trim(), 20, y);
-        y += 8;
-      });
-
-      doc.addImage(qrImgData, "PNG", 70, y + 5, 60, 60);
-      doc.save("tiket-bola.pdf");
-    }
-  </script>
-</body>
-</html>
+            seat.classList.
